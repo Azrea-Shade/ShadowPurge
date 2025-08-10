@@ -1,7 +1,7 @@
 package com.azreashade.shadowpurge.ui
 
-import com.azreashade.shadowpurge.ui.checkUsageAccess
 import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -10,9 +10,11 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.azreashade.shadowpurge.AppKillService
 import com.azreashade.shadowpurge.data.AppInfo
 import com.azreashade.shadowpurge.data.AppRepository
 import com.azreashade.shadowpurge.data.ExclusionManager
+import java.io.File
 
 @Composable
 fun MainScreen(context: Context) {
@@ -52,7 +54,6 @@ fun MainScreen(context: Context) {
             }
         }
 
-        // Kill interval selection
         var selectedInterval by remember { mutableStateOf(30) }
         val intervals = listOf(15, 30, 60)
 
@@ -123,11 +124,25 @@ fun MainScreen(context: Context) {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Row {
-                        Button(onClick = { /* TODO: Start Service with selectedInterval and exclusions */ }, modifier = Modifier.weight(1f)) {
+                        Button(
+                            onClick = {
+                                val intent = Intent(context, AppKillService::class.java).apply {
+                                    putExtra("interval_minutes", selectedInterval)
+                                }
+                                context.startForegroundService(intent)
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
                             Text("Start")
                         }
                         Spacer(modifier = Modifier.width(16.dp))
-                        Button(onClick = { /* TODO: Stop Service */ }, modifier = Modifier.weight(1f)) {
+                        Button(
+                            onClick = {
+                                val intent = Intent(context, AppKillService::class.java)
+                                context.stopService(intent)
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
                             Text("Stop")
                         }
                     }
@@ -135,11 +150,33 @@ fun MainScreen(context: Context) {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Row {
-                        OutlinedButton(onClick = { /* TODO: Export exclusions */ }, modifier = Modifier.weight(1f)) {
+                        OutlinedButton(
+                            onClick = {
+                                val exportFile = File(context.getExternalFilesDir(null), "exclusions_backup.json")
+                                val success = exclusionManager.exportExclusions(exportFile)
+                                // TODO: Show user feedback (Toast/Snackbar) for success/failure
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
                             Text("Export Exclusions")
                         }
                         Spacer(modifier = Modifier.width(16.dp))
-                        OutlinedButton(onClick = { /* TODO: Import exclusions */ }, modifier = Modifier.weight(1f)) {
+                        OutlinedButton(
+                            onClick = {
+                                val importFile = File(context.getExternalFilesDir(null), "exclusions_backup.json")
+                                val success = exclusionManager.importExclusions(importFile)
+                                if (success) {
+                                    exclusionManager.loadExclusions()?.let {
+                                        excludedPackages.clear()
+                                        excludedPackages.addAll(it)
+                                    }
+                                    // TODO: Show success feedback
+                                } else {
+                                    // TODO: Show failure feedback
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
                             Text("Import Exclusions")
                         }
                     }
