@@ -1,21 +1,34 @@
-package com.azreashade.shadowpurge.ui
+package com.azreashade.shadowpurge.utils
 
 import android.app.AppOpsManager
 import android.content.Context
-import android.os.Process
-import android.util.Log
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings
 
-fun checkUsageAccess(context: Context): Boolean {
-    try {
+object UsageAccessUtils {
+
+    fun hasUsageAccessPermission(context: Context): Boolean {
         val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-        val mode = appOps.checkOpNoThrow(
-            AppOpsManager.OPSTR_GET_USAGE_STATS,
-            Process.myUid(),
-            context.packageName
-        )
+        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            appOps.unsafeCheckOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(),
+                context.packageName
+            )
+        } else {
+            appOps.checkOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(),
+                context.packageName
+            )
+        }
         return mode == AppOpsManager.MODE_ALLOWED
-    } catch (e: Exception) {
-        Log.e("UsageAccessUtils", "Error checking usage access", e)
-        return false
+    }
+
+    fun requestUsageAccess(context: Context) {
+        val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        context.startActivity(intent)
     }
 }
