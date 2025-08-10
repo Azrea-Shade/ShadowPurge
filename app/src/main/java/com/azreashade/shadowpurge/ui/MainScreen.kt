@@ -1,5 +1,6 @@
 package com.azreashade.shadowpurge.ui
 
+import com.azreashade.shadowpurge.ui.checkUsageAccess
 import com.azreashade.shadowpurge.ui.UsageAccessPrompt
 import com.azreashade.shadowpurge.ui.checkUsageAccess
 import android.content.Context
