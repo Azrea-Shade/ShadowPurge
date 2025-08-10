@@ -1,7 +1,7 @@
 package com.azreashade.shadowpurge.ui
 
 import android.content.Context
-import androidx.compose.foundation.clickable
+import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.azreashade.shadowpurge.AppKillService
 import com.azreashade.shadowpurge.data.AppInfo
 import com.azreashade.shadowpurge.data.AppRepository
 import com.azreashade.shadowpurge.data.ExclusionManager
@@ -21,6 +22,9 @@ fun MainScreen(context: Context) {
 
     val appRepository = remember { AppRepository(context) }
     val exclusionManager = remember { ExclusionManager(context) }
+
+    var killInterval by remember { mutableStateOf(30) } // default 30 mins
+    var serviceRunning by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         appRepository.loadApps()
@@ -50,6 +54,58 @@ fun MainScreen(context: Context) {
             when (selectedTab) {
                 0 -> AppList(appRepository.userApps, exclusionManager)
                 1 -> AppList(appRepository.systemApps, exclusionManager)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text("Select Kill Interval:")
+            Row(modifier = Modifier.padding(vertical = 8.dp)) {
+                listOf(15, 30, 60).forEach { minutes ->
+                    Button(
+                        onClick = { killInterval = minutes },
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 4.dp),
+                        colors = if (killInterval == minutes) ButtonDefaults.buttonColors()
+                        else ButtonDefaults.outlinedButtonColors()
+                    ) {
+                        Text("$minutes min")
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row {
+                Button(
+                    onClick = {
+                        if (!serviceRunning) {
+                            val intent = Intent(context, AppKillService::class.java).apply {
+                                putExtra("interval_minutes", killInterval.toLong())
+                            }
+                            context.startForegroundService(intent)
+                            serviceRunning = true
+                        }
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Start")
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Button(
+                    onClick = {
+                        if (serviceRunning) {
+                            val intent = Intent(context, AppKillService::class.java)
+                            context.stopService(intent)
+                            serviceRunning = false
+                        }
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Stop")
+                }
             }
         }
     }
