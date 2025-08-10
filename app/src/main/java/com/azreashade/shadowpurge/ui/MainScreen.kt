@@ -14,13 +14,15 @@ import com.azreashade.shadowpurge.AppKillService
 import com.azreashade.shadowpurge.data.AppInfo
 import com.azreashade.shadowpurge.data.AppRepository
 import com.azreashade.shadowpurge.data.ExclusionManager
+import com.azreashade.shadowpurge.utils.UsageAccessUtils
 import java.io.File
 
 @Composable
 fun MainScreen(context: Context) {
     var showUsageAccessDialog by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
-        showUsageAccessDialog = !checkUsageAccess(context)
+        showUsageAccessDialog = !UsageAccessUtils.hasUsageAccessPermission(context)
     }
 
     if (showUsageAccessDialog) {
@@ -154,7 +156,7 @@ fun MainScreen(context: Context) {
                             onClick = {
                                 val exportFile = File(context.getExternalFilesDir(null), "exclusions_backup.json")
                                 val success = exclusionManager.exportExclusions(exportFile)
-                                // TODO: Show user feedback (Toast/Snackbar) for success/failure
+                                // TODO: Add user feedback (Toast/Snackbar)
                             },
                             modifier = Modifier.weight(1f)
                         ) {
@@ -170,9 +172,9 @@ fun MainScreen(context: Context) {
                                         excludedPackages.clear()
                                         excludedPackages.addAll(it)
                                     }
-                                    // TODO: Show success feedback
+                                    // TODO: Add user feedback for success
                                 } else {
-                                    // TODO: Show failure feedback
+                                    // TODO: Add user feedback for failure
                                 }
                             },
                             modifier = Modifier.weight(1f)
