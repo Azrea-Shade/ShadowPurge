@@ -1,13 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     package="com.azreashade.shadowpurge">
 
-    <!-- Permissions -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <!-- Usage access is a special permission; this line is needed but user must enable manually -->
+    <!-- Required permission to query usage stats -->
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
-    <!-- To improve background reliability -->
-    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- Permission to run foreground service -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:allowBackup="true"
@@ -17,23 +15,20 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ShadowPurge">
 
-        <!-- Main Activity -->
         <activity
             android:name=".MainActivity"
-            android:exported="true"
-            android:launchMode="singleTop">
+            android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
 
-        <!-- Foreground Service Declaration -->
+        <!-- Foreground service declaration -->
         <service
             android:name=".AppKillService"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
-        
+            android:foregroundServiceType="connectedDevice|dataSync|location|mediaPlayback" />
     </application>
 
 </manifest>
