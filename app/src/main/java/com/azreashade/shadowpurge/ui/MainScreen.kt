@@ -13,6 +13,8 @@ import com.azreashade.shadowpurge.AppKillService
 import com.azreashade.shadowpurge.data.AppInfo
 import com.azreashade.shadowpurge.data.AppRepository
 import com.azreashade.shadowpurge.data.ExclusionManager
+import com.azreashade.shadowpurge.ui.UsageAccessPrompt
+import com.azreashade.shadowpurge.ui.checkUsageAccess
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
