@@ -32,4 +32,29 @@ class ExclusionManager(private val context: Context) {
             Log.e("ExclusionManager", "Failed to save exclusions", e)
         }
     }
+
+    fun exportExclusions(exportFile: File): Boolean {
+        return try {
+            val exclusions = loadExclusions() ?: listOf()
+            val json = Json.encodeToString(exclusions)
+            exportFile.writeText(json)
+            true
+        } catch (e: Exception) {
+            Log.e("ExclusionManager", "Export failed", e)
+            false
+        }
+    }
+
+    fun importExclusions(importFile: File): Boolean {
+        return try {
+            if (!importFile.exists()) return false
+            val json = importFile.readText()
+            val exclusions = Json.decodeFromString<MutableList<String>>(json)
+            saveExclusions(exclusions)
+            true
+        } catch (e: Exception) {
+            Log.e("ExclusionManager", "Import failed", e)
+            false
+        }
+    }
 }
