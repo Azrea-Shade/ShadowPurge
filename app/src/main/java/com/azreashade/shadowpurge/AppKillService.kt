@@ -1,19 +1,16 @@
 package com.azreashade.shadowpurge
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.Service
+import android.app.*
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import android.os.Handler
-import android.os.Looper
+import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.azreashade.shadowpurge.data.AppInfo
+import com.azreashade.shadowpurge.data.AppRepository
+import com.azreashade.shadowpurge.data.ExclusionManager
 import kotlinx.coroutines.*
-import kotlin.time.Duration
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
 
 class AppKillService : Service() {
 
@@ -23,9 +20,15 @@ class AppKillService : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private var killIntervalMillis: Long = 30 * 60 * 1000L // default 30 minutes
 
+    private lateinit var appRepository: AppRepository
+    private lateinit var exclusionManager: ExclusionManager
+
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        appRepository = AppRepository(applicationContext)
+        exclusionManager = ExclusionManager(applicationContext)
+        appRepository.loadApps()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -48,7 +51,19 @@ class AppKillService : Service() {
     }
 
     private fun killSelectedApps() {
-        // TODO: Add app killing logic here using the exclusion list and user apps
+        val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+
+        // Iterate user apps and kill those not excluded
+        for (app in appRepository.userApps) {
+            if (!exclusionManager.isExcluded(app.packageName)) {
+                try {
+                    activityManager.killBackgroundProcesses(app.packageName)
+                    Log.i("ShadowPurge", "Killed app: ${app.appName} (${app.packageName})")
+                } catch (e: Exception) {
+                    Log.w("ShadowPurge", "Failed to kill app: ${app.appName} (${app.packageName}): ${e.message}")
+                }
+            }
+        }
     }
 
     private fun createNotification(): Notification {
@@ -71,9 +86,7 @@ class AppKillService : Service() {
         }
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
-        return null
-    }
+    override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
         super.onDestroy()
