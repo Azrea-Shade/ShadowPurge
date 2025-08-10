@@ -1,44 +1,35 @@
 package com.azreashade.shadowpurge.data
 
 import android.content.Context
-import android.content.SharedPreferences
+import android.util.Log
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import java.io.File
 
-class ExclusionManager(context: Context) {
+class ExclusionManager(private val context: Context) {
 
-    companion object {
-        private const val PREFS_NAME = "shadow_purge_prefs"
-        private const val KEY_EXCLUDED_APPS = "excluded_apps"
-    }
+    private val filename = "excluded_apps.json"
 
-    private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-
-    private var excludedApps: MutableSet<String> = loadExcludedApps()
-
-    private fun loadExcludedApps(): MutableSet<String> {
-        return prefs.getStringSet(KEY_EXCLUDED_APPS, mutableSetOf())?.toMutableSet() ?: mutableSetOf()
-    }
-
-    private fun saveExcludedApps() {
-        prefs.edit().putStringSet(KEY_EXCLUDED_APPS, excludedApps).apply()
-    }
-
-    fun isExcluded(packageName: String): Boolean {
-        return excludedApps.contains(packageName)
-    }
-
-    fun toggleExclusion(packageName: String) {
-        if (excludedApps.contains(packageName)) {
-            excludedApps.remove(packageName)
-        } else {
-            excludedApps.add(packageName)
+    fun loadExclusions(): MutableList<String>? {
+        return try {
+            val file = File(context.filesDir, filename)
+            if (!file.exists()) return mutableListOf()
+            val json = file.readText()
+            Json.decodeFromString<MutableList<String>>(json)
+        } catch (e: Exception) {
+            Log.e("ExclusionManager", "Failed to load exclusions", e)
+            null
         }
-        saveExcludedApps()
     }
 
-    fun getAllExcluded(): Set<String> = excludedApps.toSet()
-
-    fun setExcludedApps(newSet: Set<String>) {
-        excludedApps = newSet.toMutableSet()
-        saveExcludedApps()
+    fun saveExclusions(exclusions: List<String>) {
+        try {
+            val file = File(context.filesDir, filename)
+            val json = Json.encodeToString(exclusions)
+            file.writeText(json)
+        } catch (e: Exception) {
+            Log.e("ExclusionManager", "Failed to save exclusions", e)
+        }
     }
 }
