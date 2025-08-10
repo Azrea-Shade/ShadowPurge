@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.azreashade.shadowpurge">
 
-    <!-- Required permission to query usage stats -->
-    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
-    <!-- Permission to run foreground service -->
+    <!-- Permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
 
     <application
         android:allowBackup="true"
@@ -24,11 +26,9 @@
             </intent-filter>
         </activity>
 
-        <!-- Foreground service declaration -->
         <service
             android:name=".AppKillService"
             android:exported="false"
-            android:foregroundServiceType="connectedDevice|dataSync|location|mediaPlayback" />
+            android:foregroundServiceType="dataSync" />
     </application>
-
 </manifest>
