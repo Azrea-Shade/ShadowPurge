@@ -3,6 +3,7 @@ package com.azreashade.shadowpurge
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import com.azreashade.shadowpurge.ui.MainScreen
 import com.azreashade.shadowpurge.ui.theme.ShadowPurgeTheme
 
 class MainActivity : ComponentActivity() {
@@ -10,7 +11,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             ShadowPurgeTheme {
-                // TODO: Add your app UI here
+                MainScreen()
             }
         }
     }
