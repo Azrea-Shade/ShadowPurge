@@ -1,17 +1,21 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
-
 buildscript {
     ext {
-        compose_version = '1.5.1'
-        kotlin_version = '1.9.0'
+        // Versions chosen for AIDE-friendly stability
+        kotlin_version = '1.8.10'
+        agp_version    = '7.4.2'
+        compose_version = '1.4.3'
+        material3_version = '1.1.0'
+        coroutines_version = '1.6.4' // avoids “not found” on some mirrors
     }
+
     repositories {
         google()
         mavenCentral()
     }
+
     dependencies {
-        classpath "com.android.tools.build:gradle:8.0.2"
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "com.android.tools.build:gradle:${agp_version}"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlin_version}"
     }
 }
 
