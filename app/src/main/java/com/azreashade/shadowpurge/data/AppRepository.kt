@@ -3,37 +3,45 @@ package com.azreashade.shadowpurge.data
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 data class AppInfo(
-    val packageName: String,
     val appName: String,
+    val packageName: String,
     val isSystemApp: Boolean
 )
 
 class AppRepository(private val context: Context) {
 
-    val userApps: SnapshotStateList<AppInfo> = mutableStateListOf()
-    val systemApps: SnapshotStateList<AppInfo> = mutableStateListOf()
+    var userApps: List<AppInfo> = emptyList()
+        private set
 
-    fun loadApps() {
-        userApps.clear()
-        systemApps.clear()
+    var systemApps: List<AppInfo> = emptyList()
+        private set
 
+    suspend fun loadApps() = withContext(Dispatchers.IO) {
         val pm = context.packageManager
-        val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
+        val packages = pm.getInstalledApplications(PackageManager.GET_META_DATA)
 
-        for (app in apps) {
+        val userAppList = mutableListOf<AppInfo>()
+        val systemAppList = mutableListOf<AppInfo>()
+
+        for (app in packages) {
             val isSystem = (app.flags and ApplicationInfo.FLAG_SYSTEM) != 0
-            val appName = pm.getApplicationLabel(app).toString()
-            val appInfo = AppInfo(app.packageName, appName, isSystem)
-
+            val appInfo = AppInfo(
+                appName = pm.getApplicationLabel(app).toString(),
+                packageName = app.packageName,
+                isSystemApp = isSystem
+            )
             if (isSystem) {
-                systemApps.add(appInfo)
+                systemAppList.add(appInfo)
             } else {
-                userApps.add(appInfo)
+                userAppList.add(appInfo)
             }
         }
+
+        userApps = userAppList.sortedBy { it.appName.lowercase() }
+        systemApps = systemAppList.sortedBy { it.appName.lowercase() }
     }
 }
