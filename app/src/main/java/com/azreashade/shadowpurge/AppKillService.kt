@@ -4,92 +4,118 @@ import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.azreashade.shadowpurge.data.AppInfo
 import com.azreashade.shadowpurge.data.AppRepository
 import com.azreashade.shadowpurge.data.ExclusionManager
 import kotlinx.coroutines.*
 
 class AppKillService : Service() {
 
-    private val CHANNEL_ID = "ShadowPurgeChannel"
-    private val NOTIFICATION_ID = 1
+    private val channelId = "shadow_purge_channel"
+    private val notificationId = 1
 
-    private val serviceScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-    private var killIntervalMillis: Long = 30 * 60 * 1000L // default 30 minutes
+    private var job: Job? = null
+    private var intervalMinutes: Long = 30
 
     private lateinit var appRepository: AppRepository
     private lateinit var exclusionManager: ExclusionManager
 
     override fun onCreate() {
         super.onCreate()
+        appRepository = AppRepository(this)
+        exclusionManager = ExclusionManager(this)
         createNotificationChannel()
-        appRepository = AppRepository(applicationContext)
-        exclusionManager = ExclusionManager(applicationContext)
-        appRepository.loadApps()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val intervalMinutes = intent?.getLongExtra("interval_minutes", 30) ?: 30
-        killIntervalMillis = (intervalMinutes * 60 * 1000)
+        intervalMinutes = intent?.getLongExtra("interval_minutes", 30) ?: 30
+        startForeground(notificationId, buildNotification())
 
-        startForeground(NOTIFICATION_ID, createNotification())
-        startKillingLoop()
+        // Cancel previous job if running
+        job?.cancel()
+
+        job = CoroutineScope(Dispatchers.Default).launch {
+            while (isActive) {
+                performAppKill()
+                delay(intervalMinutes * 60 * 1000) // convert minutes to ms
+            }
+        }
 
         return START_STICKY
     }
 
-    private fun startKillingLoop() {
-        serviceScope.launch {
-            while (isActive) {
-                killSelectedApps()
-                delay(killIntervalMillis)
+    private suspend fun performAppKill() {
+        appRepository.loadApps()
+        val excluded = exclusionManager.getAllExcluded()
+        val pm = packageManager
+
+        val appsToKill = appRepository.userApps.filter { appInfo ->
+            !excluded.contains(appInfo.packageName)
+        }
+
+        Log.d("AppKillService", "Killing apps: ${appsToKill.map { it.packageName }}")
+
+        for (app in appsToKill) {
+            try {
+                // Attempt to kill app process
+                killApp(app.packageName)
+            } catch (e: Exception) {
+                Log.e("AppKillService", "Failed to kill ${app.packageName}: ${e.message}")
             }
         }
     }
 
-    private fun killSelectedApps() {
-        val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-
-        // Iterate user apps and kill those not excluded
-        for (app in appRepository.userApps) {
-            if (!exclusionManager.isExcluded(app.packageName)) {
-                try {
-                    activityManager.killBackgroundProcesses(app.packageName)
-                    Log.i("ShadowPurge", "Killed app: ${app.appName} (${app.packageName})")
-                } catch (e: Exception) {
-                    Log.w("ShadowPurge", "Failed to kill app: ${app.appName} (${app.packageName}): ${e.message}")
-                }
-            }
-        }
+    private fun killApp(packageName: String) {
+        // For non-rooted devices, killing apps is limited.
+        // Here we try to use ActivityManager's killBackgroundProcesses.
+        val am = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        am.killBackgroundProcesses(packageName)
     }
 
-    private fun createNotification(): Notification {
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+    private fun buildNotification(): Notification {
+        val stopIntent = Intent(this, AppKillService::class.java).apply {
+            action = ACTION_STOP_SERVICE
+        }
+        val pendingStopIntent = PendingIntent.getService(
+            this,
+            0,
+            stopIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        return NotificationCompat.Builder(this, channelId)
             .setContentTitle("Shadow Purge Running")
-            .setContentText("Automatically killing selected apps")
-            .setSmallIcon(android.R.drawable.ic_menu_delete)
+            .setContentText("Killing background apps every $intervalMinutes minutes")
+            .setSmallIcon(android.R.drawable.ic_menu_close_clear_cancel)
+            .addAction(android.R.drawable.ic_media_pause, "Stop", pendingStopIntent)
+            .setOngoing(true)
             .build()
     }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                CHANNEL_ID,
+                channelId,
                 "Shadow Purge Service",
                 NotificationManager.IMPORTANCE_LOW
             )
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(channel)
+            val nm = getSystemService(NotificationManager::class.java)
+            nm.createNotificationChannel(channel)
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        job?.cancel()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    override fun onDestroy() {
-        super.onDestroy()
-        serviceScope.cancel()
+    companion object {
+        const val ACTION_STOP_SERVICE = "ACTION_STOP_SERVICE"
     }
 }
