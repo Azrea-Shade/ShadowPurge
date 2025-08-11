@@ -2,7 +2,8 @@ name: Android CI
 
 on:
   push:
-    branches: [ aide-legacy ]
+    branches: [ aide-legacy, main ]
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -20,25 +21,47 @@ jobs:
           java-version: 17
           cache: gradle
 
+      # Install cmdline-tools and set ANDROID_SDK_ROOT / ANDROID_HOME
       - name: Set up Android SDK (cmdline tools only)
         uses: android-actions/setup-android@v3
 
-      - name: Install SDK packages (explicit path)
+      - name: Install SDK packages (with retries)
         shell: bash
         env:
           SDKMANAGER: ${{ env.ANDROID_SDK_ROOT }}/cmdline-tools/latest/bin/sdkmanager
         run: |
-          set -x
-          ( yes | "$SDKMANAGER" --licenses ) || true
-          "$SDKMANAGER" --install "platform-tools"
-          "$SDKMANAGER" --install "platforms;android-31"
-          "$SDKMANAGER" --install "build-tools;31.0.0"
+          set -e
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          "$SDKMANAGER" --version || true
+
+          retry() { n=0; until "$@"; do n=$((n+1)); [ $n -ge 3 ] && { echo "❌ Giving up: $*"; exit 1; }; echo "↻ Retry $n: $*"; sleep 5; done; }
+
+          # Accept licenses (ignore broken pipe), retry up to 3x
+          retry bash -lc '( yes | "$SDKMANAGER" --licenses ) || true'
+
+          # Install required components individually with retries
+          retry "$SDKMANAGER" --install "platform-tools"
+          retry "$SDKMANAGER" --install "platforms;android-31"
+          retry "$SDKMANAGER" --install "build-tools;31.0.0"
+
+          # Optional: quick list for debugging (don’t fail if it errors)
+          "$SDKMANAGER" --list | head -n 80 || true
 
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Build Debug APK
-        run: ./gradlew clean :app:assembleDebug --stacktrace
+      - name: Build Debug APK (verbose + save log)
+        shell: bash
+        run: |
+          set -o pipefail
+          ./gradlew clean :app:assembleDebug --stacktrace --info --no-daemon --console=plain 2>&1 | tee build-log.txt
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-build-log
+          path: build-log.txt
 
       - name: Upload APK artifact
         if: success()
