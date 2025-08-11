@@ -1,4 +1,7 @@
 package com.azreashade.shadowpurge;
+import android.content.Intent;
+import android.view.Menu;
+import android.view.MenuItem;
 
 import android.content.Intent;
 import android.os.Build;
@@ -16,6 +19,11 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
 public class MainActivity extends AppCompatActivity {
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
 
     private int intervalMinutes = 30; // default
 
@@ -80,5 +88,13 @@ public class MainActivity extends AppCompatActivity {
             stopService(new Intent(this, AppKillService.class));
             Toast.makeText(this, "Service stopped", Toast.LENGTH_SHORT).show();
         });
+    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_settings) {
+            startActivity(new Intent(this, SettingsActivity.class));
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }
