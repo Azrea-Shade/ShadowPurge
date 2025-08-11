@@ -95,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
             startActivity(new Intent(this, SettingsActivity.class));
             return true;
         }
+        if (item.getItemId() == R.id.action_quick_purge) { runQuickPurge(); return true; }
         return super.onOptionsItemSelected(item);
     }
 }

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<preferences xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Auto purge interval -->
+    <ListPreference
+        android:key="pref_interval_minutes"
+        android:title="Auto purge interval"
+        android:entries="@array/purge_interval_labels"
+        android:entryValues="@array/purge_interval_values"
+        android:defaultValue="30"
+        android:summary="How often to run the purge automatically" />
+
+    <!-- Enable/disable auto purge -->
+    <SwitchPreferenceCompat
+        android:key="pref_auto_purge_enabled"
+        android:title="Enable auto purge"
+        android:defaultValue="false"
+        android:summary="Run purge on a schedule in the background" />
+
+    <!-- Theme -->
+    <ListPreference
+        android:key="pref_theme"
+        android:title="Theme"
+        android:entries="@array/theme_labels"
+        android:entryValues="@array/theme_values"
+        android:defaultValue="system"
+        android:summary="Choose Light, Dark, or follow System" />
+
+    <!-- Vibration feedback -->
+    <SwitchPreferenceCompat
+        android:key="pref_vibrate_on_purge"
+        android:title="Vibrate on purge"
+        android:defaultValue="true"
+        android:summary="Small haptic feedback when a purge is requested" />
+
+</preferences>
