@@ -21,13 +21,15 @@ jobs:
           java-version: 17
           cache: gradle
 
-      - name: Set up Android SDK
+      # Install Android cmdline-tools + set ANDROID_HOME/SDK paths
+      - name: Set up Android SDK (cmdline tools only)
         uses: android-actions/setup-android@v3
-        with:
-          packages: |
-            platform-tools
-            platforms;android-31
-            build-tools;31.0.0
+
+      - name: Install SDK packages
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "platforms;android-31" "build-tools;31.0.0"
 
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
