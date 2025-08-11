@@ -1,53 +1,17 @@
-name: Android CI
+- name: Install SDK packages (explicit path)
+  shell: bash
+  env:
+    SDKMANAGER: ${{ env.ANDROID_SDK_ROOT }}/cmdline-tools/latest/bin/sdkmanager
+  run: |
+    set -x
+    echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+    "$SDKMANAGER" --version
 
-on:
-  push:
-    branches: [ aide-legacy, main ]
-  pull_request:
-  workflow_dispatch:
+    # Accept licenses; ignore broken-pipe exit
+    ( yes | "$SDKMANAGER" --licenses ) || true
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+    # Install needed components
+    "$SDKMANAGER" --install "platform-tools" "platforms;android-31" "build-tools;31.0.0"
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-          cache: gradle
-
-      # Install cmdline-tools and set ANDROID_SDK_ROOT env vars
-      - name: Set up Android SDK (cmdline tools only)
-        uses: android-actions/setup-android@v3
-
-      - name: Install SDK packages (explicit path)
-        shell: bash
-        env:
-          SDKMANAGER: ${{ env.ANDROID_SDK_ROOT }}/cmdline-tools/latest/bin/sdkmanager
-        run: |
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-          "$SDKMANAGER" --version
-          # quick listing to ensure repos are reachable
-          "$SDKMANAGER" --list | head -n 50 || true
-          yes | "$SDKMANAGER" --licenses
-          "$SDKMANAGER" "platform-tools"
-          "$SDKMANAGER" "platforms;android-31"
-          "$SDKMANAGER" "build-tools;31.0.0"
-
-      - name: Make Gradle wrapper executable
-        run: chmod +x ./gradlew
-
-      - name: Build Debug APK
-        run: ./gradlew clean :app:assembleDebug --stacktrace
-
-      - name: Upload APK artifact
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+    # Optional: show a short list for debugging (don’t fail if it errors)
+    "$SDKMANAGER" --list | head -n 80 || true
