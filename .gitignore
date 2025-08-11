@@ -1,0 +1,14 @@
+# Gradle
+.gradle/
+build/
+local.properties
+# App module build outputs
+app/build/
+# IDE files
+.idea/
+*.iml
+# Logs
+*.log
+# APKs / bundles
+*.apk
+*.aab
