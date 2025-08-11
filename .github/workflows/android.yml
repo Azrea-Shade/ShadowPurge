@@ -1,17 +1,15 @@
-- name: Install SDK packages (explicit path)
-  shell: bash
-  env:
-    SDKMANAGER: ${{ env.ANDROID_SDK_ROOT }}/cmdline-tools/latest/bin/sdkmanager
-  run: |
-    set -x
-    echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-    "$SDKMANAGER" --version
+name: Sanity CI
 
-    # Accept licenses; ignore broken-pipe exit
-    ( yes | "$SDKMANAGER" --licenses ) || true
+on:
+  push:
+    branches: [ aide-legacy ]
+  workflow_dispatch:
 
-    # Install needed components
-    "$SDKMANAGER" --install "platform-tools" "platforms;android-31" "build-tools;31.0.0"
-
-    # Optional: show a short list for debugging (don’t fail if it errors)
-    "$SDKMANAGER" --list | head -n 80 || true
+jobs:
+  sanity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Say hi
+        run: echo "Workflow parses and runs ✅"
